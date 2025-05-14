@@ -1,0 +1,58 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "trabdlkarim/lararestler",
+    "type": "library",
+    "description": "A package for having Restler API in your Laravel application.",
+    "keywords": [
+        "laravel",
+        "package",
+        "restler",
+        "rest-api",
+        "restful-api",
+        "api"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "role": "Developer",
+            "name": "Toure A. Karim",
+            "email": "mail@trabdlkarim.me",
+            "homepage": "https://trabdlkarim.me/"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^12.14",
+        "illuminate/http": "^12.14",
+        "illuminate/support": "^12.14",
+        "restler/framework": "^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mirak\\Lararestler\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mirak\\Lararestler\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Mirak\\Lararestler\\ServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require-dev": {
+        "laravel/pint": "^1.22",
+        "phpstan/phpstan": "^2.1"
+    }
+}
