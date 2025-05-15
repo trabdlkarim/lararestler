@@ -2,7 +2,7 @@
 
 namespace Mirak\Lararestler\Http\Requests;
 
-abstract class Payload extends \stdClass
+abstract class Model extends \stdClass
 {
     public function __construct()
     {

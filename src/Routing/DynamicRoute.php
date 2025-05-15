@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Luracast\Restler\CommentParser;
 use Mirak\Lararestler\Attributes\QueryParam;
-use Mirak\Lararestler\Http\Requests\Payload;
+use Mirak\Lararestler\Http\Requests\Model as RequestModel;
 use Mirak\Lararestler\RestApi;
 use ReflectionAttribute;
 
@@ -119,7 +119,7 @@ class DynamicRoute
             
             if(!$parameter->getType()->isBuiltin()){
                 $instance = new $type();
-                if (is_subclass_of($instance, Payload::class)) {
+                if (is_subclass_of($instance, RequestModel::class)) {
                     return true;
                 }
             }
