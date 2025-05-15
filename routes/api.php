@@ -6,14 +6,14 @@ use Mirak\Lararestler\Http\Controllers\ExplorerController;
 use Mirak\Lararestler\Http\Controllers\ResourceController;
 use Mirak\Lararestler\RestApi;
 
-if (App::environment(['local', 'dev', 'testing'])) {
-    Route::get(trim(config('lararestler.path_prefix'), '/') . '/explorer', [ExplorerController::class, 'index']);
+if (App::environment(config("lararestler.allowed_envs"))) {
+    Route::get(RestApi::getPathPrefix() . '/explorer', [ExplorerController::class, 'index']);
 }
 
-Route::prefix(trim(config('lararestler.path_prefix'), '/'))
+Route::prefix(RestApi::getPathPrefix())
     ->middleware(config('lararestler.middleware'))->group(
         function () {
-            if (App::environment(['local', 'dev', 'testing'])) {
+            if (App::environment(config("lararestler.allowed_envs"))) {
                 $versionRegex = 'v[0-9]+';
                 $pathRegex = '[a-zA-Z0-9_-]+';
 

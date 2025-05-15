@@ -5,11 +5,11 @@ namespace Mirak\Lararestler;
 use Exception;
 use Luracast\Restler\Defaults;
 use Luracast\Restler\RestException;
-use Luracast\Restler\Restler as RestlerRestler;
+use Luracast\Restler\Restler as LuracastRestler;
 use Luracast\Restler\Scope;
 use Luracast\Restler\Util;
 
-class Restler extends RestlerRestler
+class Restler extends LuracastRestler
 {
     public function handle()
     {
@@ -76,7 +76,7 @@ class Restler extends RestlerRestler
 
     public function addAPIClass($className, $resourcePath = null)
     {
-        try{
+        try {
             if ($this->productionMode && is_null($this->cached)) {
                 $routes = $this->cache->get('routes');
                 if (isset($routes) && is_array($routes)) {
@@ -114,14 +114,20 @@ class Restler extends RestlerRestler
                     $name = 'v{$version}\\' . $className;
                 }
 
-                for ($version = $this->apiMinimumVersion;
-                     $version <= $this->apiVersion;
-                     $version++) {
+                for (
+                    $version = $this->apiMinimumVersion;
+                    $version <= $this->apiVersion;
+                    $version++
+                ) {
 
-                    $versionedClassName = str_replace('{$version}', $version,
-                        $name);
+                    $versionedClassName = str_replace(
+                        '{$version}',
+                        $version,
+                        $name
+                    );
                     if (class_exists($versionedClassName)) {
-                        Routes::addAPIClass($versionedClassName,
+                        Routes::addAPIClass(
+                            $versionedClassName,
                             Util::getResourcePath(
                                 $className,
                                 $resourcePath
@@ -137,7 +143,8 @@ class Restler extends RestlerRestler
                             $this->apiVersionMap[$className][$version] = $versionedClassName;
                         }
                     } elseif (isset($this->apiVersionMap[$className][$version])) {
-                        Routes::addAPIClass($this->apiVersionMap[$className][$version],
+                        Routes::addAPIClass(
+                            $this->apiVersionMap[$className][$version],
                             Util::getResourcePath(
                                 $className,
                                 $resourcePath
@@ -146,11 +153,10 @@ class Restler extends RestlerRestler
                         );
                     }
                 }
-
             }
         } catch (Exception $e) {
             $e = new Exception(
-                "addAPIClass('$className') failed. ".$e->getMessage(),
+                "addAPIClass('$className') failed. " . $e->getMessage(),
                 $e->getCode(),
                 $e
             );
@@ -158,7 +164,7 @@ class Restler extends RestlerRestler
             $this->message($e);
         }
     }
-    
+
     /**
      * Find the api method to execute for the requested Url
      */
@@ -204,5 +210,67 @@ class Restler extends RestlerRestler
                     = $this->apiVersionMap[Scope::$classAliases[$auth]][$this->requestedApiVersion];
             }
         }
+    }
+
+    /**
+     * Parses the request url and get the api path
+     *
+     * @return string api path
+     */
+    protected function getPath()
+    {
+        // fix SCRIPT_NAME for PHP 5.4 built-in web server
+        if (false === strpos($_SERVER['SCRIPT_NAME'], '.php'))
+            $_SERVER['SCRIPT_NAME']
+                = '/' . substr($_SERVER['SCRIPT_FILENAME'], strlen($_SERVER['DOCUMENT_ROOT']) + 1);
+
+        list($base, $path) = Util::splitCommonPath(
+            strtok(urldecode($_SERVER['REQUEST_URI']), '?'), //remove query string
+            $_SERVER['SCRIPT_NAME']
+        );
+
+        $path = RestApi::removePathPrefix($path);
+
+        if (!$this->baseUrl) {
+            // Fix port number retrieval if port is specified in HOST header.
+            $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+            $portPos = strpos($host, ":");
+            if ($portPos) {
+                $port = substr($host, $portPos + 1);
+            } else {
+                $port = isset($_SERVER['SERVER_PORT']) ? $_SERVER['SERVER_PORT'] : '80';
+                $port = isset($_SERVER['HTTP_X_FORWARDED_PORT']) ? $_SERVER['HTTP_X_FORWARDED_PORT'] : $port; // Amazon ELB
+            }
+            $https = $port === '443' ||
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || // Amazon ELB
+                (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
+            $baseUrl = ($https ? 'https://' : 'http://') . $_SERVER['SERVER_NAME'];
+            if ($port != '80' && $port != '443')
+                $baseUrl .= ':' . $port;
+            $this->baseUrl = $baseUrl . $base;
+        } elseif (!empty($base) && false === strpos($this->baseUrl, $base)) {
+            $this->baseUrl .= $base;
+        }
+
+        $path = str_replace(
+            array_merge(
+                $this->formatMap['extensions'],
+                $this->formatOverridesMap['extensions']
+            ),
+            '',
+            rtrim($path, '/') //remove trailing slash if found
+        );
+
+        if (Defaults::$useUrlBasedVersioning && strlen($path) && $path[0] === 'v') {
+            $version = intval(substr($path, 1));
+            if ($version && $version <= $this->apiVersion) {
+                $this->requestedApiVersion = $version;
+                $path = explode('/', $path, 2);
+                $path = count($path) === 2 ? $path[1] : '';
+            }
+        } else {
+            $this->requestedApiVersion = $this->apiMinimumVersion;
+        }
+        return $path;
     }
 }

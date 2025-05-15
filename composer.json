@@ -44,6 +44,11 @@
             ]
         }
     },
+    "scripts": {
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=lararestler-config --tag=lararestler-assets"
+        ]
+    },
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",

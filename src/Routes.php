@@ -98,7 +98,7 @@ class Routes extends RestlerRoutes
                 //assume return type is array
                 $metadata['return']['type'] = 'array';
             }
-            
+
             foreach ($params as $k => $param) {
                 $children = array();
                 $type = version_compare(phpversion(), '8.0.0', '<') ?

@@ -36,7 +36,8 @@ class ServiceProvider extends BaseServiceProvider
         ], "lararestler-views");
 
         $this->publishes([
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/lararestler'),
             __DIR__ . '/../public' => public_path('vendor/lararestler'),
-        ], "lararestler-public");
+        ], "lararestler-assets");
     }
 }

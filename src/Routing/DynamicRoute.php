@@ -8,16 +8,13 @@ use Illuminate\Support\Str;
 use Luracast\Restler\CommentParser;
 use Mirak\Lararestler\Attributes\QueryParam;
 use Mirak\Lararestler\Http\Requests\Payload;
-
+use Mirak\Lararestler\RestApi;
 use ReflectionAttribute;
 
 class DynamicRoute
 {
     private static $httpMethods = ['any', 'get', 'post', 'put', 'patch', 'delete'];
-    private const EMIT_ROUTE_STATEMENTS = false;
     private static $reservedMethods = ['getMiddleware'];
-
-    public static $defaultNamespace = "App\\Http\\Resources";
 
     /**
      * Main entry point to register routes dynamically for a given controller.
@@ -44,10 +41,6 @@ class DynamicRoute
                 Route::{$route->httpMethod}($route->slug, $route->target);
             }
         }
-
-        if (self::EMIT_ROUTE_STATEMENTS) {
-            self::emitRoutes($controllerClassName, $routes);
-        }
     }
 
     /**
@@ -58,9 +51,10 @@ class DynamicRoute
      */
     private static function getClassReflection($controllerClassName)
     {
+        $namespace = RestApi::getResourceNamespace();
         return class_exists($controllerClassName) ?
             new \ReflectionClass($controllerClassName) :
-            new \ReflectionClass(self::$defaultNamespace . "\\" . $controllerClassName);
+            new \ReflectionClass($namespace . "\\" . $controllerClassName);
     }
 
     /**
@@ -249,31 +243,5 @@ class DynamicRoute
     private static function startsWith($string, $match)
     {
         return strpos($string, $match) === 0;
-    }
-
-    /**
-     * Optionally emit the route statements to a file.
-     *
-     * @param string $controllerClassName
-     * @param array $routes
-     */
-    private static function emitRoutes($controllerClassName, array $routes)
-    {
-        $directory = storage_path('tmp/dynamic-routes');
-        $filename = class_basename($controllerClassName);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0777, true);
-        }
-
-        $routeList = "<?php\n// Routes for $controllerClassName\n";
-        $routeList .= "use Illuminate\Support\Facades\Route; \n\n";
-
-        foreach ($routes as $route) {
-            $mid = isset($route->middleware) ? $route->middleware[0] : '';
-            $routeList .= sprintf("Route::%s('%s', '%s')->middleware('%s');\n", $route->httpMethod, $route->slug, $route->target, $mid);
-        }
-
-        file_put_contents("$directory/{$filename}.php", $routeList . PHP_EOL);
     }
 }

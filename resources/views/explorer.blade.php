@@ -48,8 +48,8 @@
         $version = "{{ $version }}"
         $prefix = "{{ trim(config('lararestler.path_prefix'), '/') }}";
         $(function() {
-            if($version) $version = "/v" + $version 
-            if($prefix) $version = "/" + $prefix + $version
+            if ($version) $version = "/v" + $version
+            if ($prefix) $version = "/" + $prefix + $version
             window.swaggerUi = new SwaggerUi({
                 discoveryUrl: $version + "/resources",
                 apiKey: "",
@@ -83,12 +83,15 @@
         <div class="swagger-ui-wrap">
             <div class="row justify-content-between">
                 <div class="col-6">
-                    <a id="logo" href="/explorer" target="_blank">{{ config('app.name') }} Explorer</a>
+                    <a id="logo"
+                        href="{{ config('lararestler.path_prefix') ? '/' . trim(config('lararestler.path_prefix'), '/') . '/explorer' : '/explorer' }}"
+                        target="_blank">{{ config('lararestler.name') }} Explorer</a>
                 </div>
                 <div class="col-2 text-end">
                     <select name="version" id="ver_selector" class="form-control-sm">
-                        @foreach (range(1, config('api.version')) as $v)
-                            <option value="{{ $v }}" @selected($v == $version)>v{{ $v }}.0</option>
+                        @foreach (range(1, config('lararestler.version')) as $v)
+                            <option value="{{ $v }}" @selected($v == $version)>v{{ $v }}.0
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -120,10 +123,12 @@
 
     </div>
     <script>
-        $(function(){
-            $("#ver_selector").on('change', function(){
+        $(function() {
+            $("#ver_selector").on('change', function() {
                 $version = $(this).val();
-                window.location.href = "/explorer?" + "v=" + $version;
+                $explorerPath =
+                    "{{ config('lararestler.path_prefix') ? '/' . trim(config('lararestler.path_prefix'), '/') . '/explorer' : '/explorer' }}"
+                window.location.href = $explorerPath + "?" + "v=" + $version;
             });
         });
     </script>

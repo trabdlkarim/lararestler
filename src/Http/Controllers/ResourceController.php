@@ -2,12 +2,14 @@
 
 namespace Mirak\Lararestler\Http\Controllers;
 
-use Mirak\Lararestler\Resources;
-use Mirak\Lararestler\Restler;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Luracast\Restler\Defaults;
 use Luracast\Restler\Filter\RateLimit;
+use Mirak\Lararestler\Resources;
+use Mirak\Lararestler\RestApi;
+use Mirak\Lararestler\Restler;
+
 
 class ResourceController extends Controller
 {
@@ -21,13 +23,20 @@ class ResourceController extends Controller
 
         $api = new Restler(App::environment(['production', 'prod']), true);
         $api->setAPIVersion(config('lararestler.version'));
-        // $api->setSupportedFormats('JsonFormat', 'XmlFormat');
         $api->setOverridingFormats('JsonFormat', 'HtmlFormat', 'UploadFormat');
 
         $apiResources = config('lararestler.resources');
         ksort($apiResources);
 
         foreach ($apiResources as $path => $resource) {
+            if (!class_exists($resource)) {
+                $resource = RestApi::getResourceNamespace() . "\\" . $resource;
+            }
+
+            if (is_numeric($path)) {
+                $path = strtolower(class_basename($resource));
+            }
+
             $api->addAPIClass($resource, $path);
         }
 
@@ -37,7 +46,11 @@ class ResourceController extends Controller
 
         $api->addFilterClass(RateLimit::class);
         $api->addAPIClass(Resources::class);
-        // $api->addAPIClass(Explorer::class);
+
+        if ($prefix = RestApi::getPathPrefix()) {
+            $base = $request->schemeAndHttpHost();
+            $api->setBaseUrls($base . "/" . $prefix);
+        }
 
         $response = $api->handle();
         return response()->json(json_decode($response, true));
