@@ -11,4 +11,10 @@ abstract class Model extends \stdClass
             $this->{$key} = $value;
         }
     }
+
+    public function __call($name, $arguments)
+    {
+        $request = app()->make('request');
+        return $request->{$name}(...$arguments);
+    }
 }

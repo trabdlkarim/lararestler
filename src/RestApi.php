@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Luracast\Restler\RestException as RestlerRestException;
 use Mirak\Lararestler\Exceptions\RestException;
 use Mirak\Lararestler\Routing\DynamicRoute;
@@ -102,10 +103,19 @@ class RestApi
         });
 
         $exceptions->render(function (Exception $e, Request $request) use ($enforceJson) {
-            $isRestEx = $e instanceof RestlerRestException;
-            if ($e instanceof HttpException || $isRestEx) {
-                if ($enforceJson || $request->expectsJson()) {
-                    $code = $isRestEx ? $e->getCode() : $e->getStatusCode();
+            if ($enforceJson || $request->expectsJson()) {
+                $isRestEx = $e instanceof RestlerRestException;
+                $isValidationEx = $e instanceof ValidationException;
+                if ($isRestEx || $isValidationEx || $e instanceof HttpException) {
+
+                    if ($isRestEx) {
+                        $code = $e->getCode();
+                    } elseif ($isValidationEx) {
+                        $code = 422;
+                    } else {
+                        $code = $e->getStatusCode();
+                    }
+
                     $message = $e->getMessage();
 
                     if (isset(RestException::$codes[$code])) {
@@ -120,6 +130,10 @@ class RestApi
                         ],
 
                     ];
+
+                    if ($isValidationEx) {
+                        $res['error']['validation'] = $e->errors();
+                    }
 
                     if (App::hasDebugModeEnabled()) {
                         $res["debug"] = [

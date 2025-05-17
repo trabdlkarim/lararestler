@@ -49,7 +49,7 @@ class RestException extends HttpException
         416 => 'Requested Range Not Satisfiable',
         417 => 'Expectation Failed',
         419 => 'Page Expired',
-        422 => 'Unprocessable Content',
+        422 => 'Unprocessable Entity',
         429 => 'Too Many Requests', //still in draft but used for rate limiting
         451 => 'Unavailable For Legal Reasons',
         500 => 'Internal Server Error',
