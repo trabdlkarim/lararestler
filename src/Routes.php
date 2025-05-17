@@ -66,7 +66,7 @@ class Routes extends RestlerRoutes
                 continue;
             }
 
-            if (isset($metadata['middleware']) && str_contains($metadata['middleware'], 'sanctum')) {
+            if (isset($metadata['middleware']) && (str_contains($metadata['middleware'], 'sanctum') || str_contains($metadata['middleware'], 'auth'))) {
                 $metadata['access'] = 'protected';
             }
 
