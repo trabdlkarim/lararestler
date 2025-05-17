@@ -16,7 +16,7 @@ class EnforceJsonContentType
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!in_array($request->method(), ['GET', 'HEAD', 'OPTIONS']) && !$request->expectsJson()) {
+        if (!in_array($request->method(), ['GET', 'HEAD', 'OPTIONS', 'DELETE']) && !$request->expectsJson()) {
             $message = "Content-Type header is missing.";
             if ($request->hasHeader('Content-Type')) {
                 $message = 'Content type `' . $request->header('Content-Type') . '` is not supported.';

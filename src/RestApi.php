@@ -76,7 +76,7 @@ class RestApi
     public static function removePathPrefix(string $path)
     {
         $prefix = self::getPathPrefix();
-        if($prefix){
+        if ($prefix) {
             $prefix .= "/";
             $pos = strpos($path, $prefix);
             if ($pos === 0) {
@@ -87,44 +87,47 @@ class RestApi
     }
 
     /**
-     * Register a renderable callback for rest exceptions.
+     * Render an HTTP exception into a JSON response if the current request expects JSON.
      * 
      * @param Illuminate\Foundation\Configuration\Exceptions $exceptions
-     * 
+     * @param bool $enforceJson Whether to always return JSON response or not. 
      * @return void
      */
-    public static function renderExceptions($exceptions)
+    public static function renderHttpException($exceptions, $enforceJson=false)
     {
-        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
-            return $request->expectsJson();
+        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) use ($enforceJson){
+            return $enforceJson || $request->expectsJson();
         });
-        //if ($request->expectsJson()) {
-        $exceptions->render(function (HttpException $e, Request $request) {
-            $code = $e->getStatusCode();
-            $message = $e->getMessage();
-            if (isset(RestException::$codes[$code])) {
-                $message = RestException::$codes[$code] .
-                    (empty($message) ? '' : ': ' . $message);
-            }
-            $res = [
-                "error" => [
-                    'endpoint' => $request->method() . ' /' . $request->path(),
-                    'code' => $code,
-                    'message' => $message,
-                ],
 
-            ];
+        $exceptions->render(function (HttpException $e, Request $request)use ($enforceJson) {
+            if ($enforceJson || $request->expectsJson()) {
+                $code = $e->getStatusCode();
+                $message = $e->getMessage();
+                
+                if (isset(RestException::$codes[$code])) {
+                    $message = RestException::$codes[$code] .
+                        (empty($message) ? '' : ': ' . $message);
+                }
 
-            if (App::hasDebugModeEnabled()) {
-                $res["debug"] = [
-                    "exception" => get_class($e),
-                    "file" => $e->getFile(),
-                    "line" => $e->getLine(),
-                    "trace" => $e->getTrace(),
+                $res = [
+                    "error" => [
+                        'code' => $code,
+                        'message' => $message,
+                    ],
+
                 ];
+
+                if (App::hasDebugModeEnabled()) {
+                    $res["debug"] = [
+                        "exception" => get_class($e),
+                        "file" => $e->getFile(),
+                        "line" => $e->getLine(),
+                        "trace" => $e->getTrace(),
+                    ];
+                }
+
+                return response()->json($res, $code);
             }
-            return response()->json($res, $code);
         });
-        // }
     }
 }
