@@ -2,9 +2,11 @@
 
 namespace Mirak\Lararestler;
 
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
+use Luracast\Restler\RestException as RestlerRestException;
 use Mirak\Lararestler\Exceptions\RestException;
 use Mirak\Lararestler\Routing\DynamicRoute;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -93,40 +95,43 @@ class RestApi
      * @param bool $enforceJson Whether to always return JSON response or not. 
      * @return void
      */
-    public static function renderHttpException($exceptions, $enforceJson=false)
+    public static function renderException($exceptions, $enforceJson = false)
     {
-        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) use ($enforceJson){
+        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) use ($enforceJson) {
             return $enforceJson || $request->expectsJson();
         });
 
-        $exceptions->render(function (HttpException $e, Request $request)use ($enforceJson) {
-            if ($enforceJson || $request->expectsJson()) {
-                $code = $e->getStatusCode();
-                $message = $e->getMessage();
-                
-                if (isset(RestException::$codes[$code])) {
-                    $message = RestException::$codes[$code] .
-                        (empty($message) ? '' : ': ' . $message);
-                }
+        $exceptions->render(function (Exception $e, Request $request) use ($enforceJson) {
+            $isRestEx = $e instanceof RestlerRestException;
+            if ($e instanceof HttpException || $isRestEx) {
+                if ($enforceJson || $request->expectsJson()) {
+                    $code = $isRestEx ? $e->getCode() : $e->getStatusCode();
+                    $message = $e->getMessage();
 
-                $res = [
-                    "error" => [
-                        'code' => $code,
-                        'message' => $message,
-                    ],
+                    if (isset(RestException::$codes[$code])) {
+                        $message = RestException::$codes[$code] .
+                            (empty($message) ? '' : ': ' . $message);
+                    }
 
-                ];
+                    $res = [
+                        "error" => [
+                            'code' => $code,
+                            'message' => $message,
+                        ],
 
-                if (App::hasDebugModeEnabled()) {
-                    $res["debug"] = [
-                        "exception" => get_class($e),
-                        "file" => $e->getFile(),
-                        "line" => $e->getLine(),
-                        "trace" => $e->getTrace(),
                     ];
-                }
 
-                return response()->json($res, $code);
+                    if (App::hasDebugModeEnabled()) {
+                        $res["debug"] = [
+                            "exception" => get_class($e),
+                            "file" => $e->getFile(),
+                            "line" => $e->getLine(),
+                            "trace" => $e->getTrace(),
+                        ];
+                    }
+
+                    return response()->json($res, $code);
+                }
             }
         });
     }
